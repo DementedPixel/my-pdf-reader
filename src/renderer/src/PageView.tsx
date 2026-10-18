@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
+import type {ReactNode} from 'react';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import {pdfjs} from './pdf';
 import type {PDFDocumentProxy} from './pdf';
@@ -9,9 +10,13 @@ interface Props {
   scale: number;
   width: number;
   height: number;
+  /** Rendered between the page bitmap and the text layer (highlights, ink). */
+  under?: ReactNode;
+  /** Rendered above the text layer (notes, text boxes, tool input). */
+  over?: ReactNode;
 }
 
-export function PageView({doc, pageNumber, scale, width, height}: Props) {
+export function PageView({doc, pageNumber, scale, width, height, under, over}: Props) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const textLayer = useRef<HTMLDivElement>(null);
@@ -73,7 +78,9 @@ export function PageView({doc, pageNumber, scale, width, height}: Props) {
       {visible && (
         <>
           <canvas ref={canvas} style={{width, height}} />
+          {under}
           <div ref={textLayer} className='textLayer' />
+          {over}
         </>
       )}
     </div>

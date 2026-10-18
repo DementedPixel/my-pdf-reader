@@ -12,7 +12,10 @@ No Adobe code or assets are used.
 - Full-document search (Ctrl F) with a results list
 - Selectable text, drag-and-drop open, `.pdf` file association, remembers last page per file
 - Dark UI and "night pages" inversion
-- Save a copy
+- Annotations: highlight, underline, strike-through, notes, text boxes, freehand drawing, eraser, undo
+  (Ctrl+Z). Saved into the PDF as standard annotations with appearance streams, so they show in
+  any viewer. Ctrl+S saves in place (atomic write), Ctrl+Shift+S saves a copy.
+- Unsaved-changes prompt when closing or opening another file
 
 ## Privacy guarantee
 
@@ -29,4 +32,8 @@ npm run dist
 
 ## Roadmap
 
-Annotations (highlight, notes, draw), form filling, signing, page tools, tabs, password-protected PDFs, print.
+Form filling, signing, page tools, tabs, password-protected PDFs, print, editing/moving existing
+annotations (currently only annotations added in the current session can be erased).
+
+Known limits: saving rewrites the whole file (digitally signed PDFs lose their signature), and
+text-box text is limited to Latin characters (standard Helvetica).

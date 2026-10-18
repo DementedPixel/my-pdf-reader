@@ -4,7 +4,7 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 export {pdfjs};
-export type {PDFDocumentProxy, PDFPageProxy} from 'pdfjs-dist';
+export type {PDFDocumentProxy, PDFPageProxy, PageViewport} from 'pdfjs-dist';
 
 export interface SearchHit {
   page: number;

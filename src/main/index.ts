@@ -1,4 +1,4 @@
-import {readFile} from 'node:fs/promises';
+import {readFile, rename, rm, writeFile} from 'node:fs/promises';
 import {basename, join} from 'node:path';
 import {app, BrowserWindow, dialog, ipcMain, session} from 'electron';
 
@@ -9,6 +9,8 @@ interface OpenedPdf {
 }
 
 let win: BrowserWindow | null = null;
+let dirty = false;
+let forceClose = false;
 
 const pdfArg = (argv: string[]) => argv.slice(1).find(a => a.toLowerCase().endsWith('.pdf'));
 
@@ -49,6 +51,11 @@ function createWindow() {
       sandbox: true,
     },
   });
+  win.on('close', e => {
+    if (!dirty || forceClose) return;
+    e.preventDefault();
+    win?.webContents.send('app:close-requested');
+  });
   win.webContents.setWindowOpenHandler(() => ({action: 'deny'}));
   win.webContents.on('will-navigate', e => e.preventDefault());
   if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL);
@@ -75,15 +82,38 @@ if (!app.requestSingleInstanceLock()) {
     return r.canceled || !r.filePaths[0] ? null : load(r.filePaths[0]);
   });
 
+  // Write to a temp file then rename, so a crash mid-save can never truncate the user's PDF.
+  const writeAtomic = async (path: string, data: Uint8Array) => {
+    const tmp = path + '.saving';
+    try {
+      await writeFile(tmp, data);
+      await rename(tmp, path);
+    } catch (e) {
+      await rm(tmp, {force: true});
+      throw e;
+    }
+  };
+
+  ipcMain.handle('pdf:save', async (_e, path: string, data: Uint8Array) => {
+    await writeAtomic(path, data);
+  });
+
   ipcMain.handle('pdf:save-as', async (_e, name: string, data: Uint8Array) => {
     const r = await dialog.showSaveDialog({
       defaultPath: name,
       filters: [{name: 'PDF', extensions: ['pdf']}],
     });
-    if (r.canceled || !r.filePath) return false;
-    const {writeFile} = await import('node:fs/promises');
-    await writeFile(r.filePath, data);
-    return true;
+    if (r.canceled || !r.filePath) return null;
+    await writeAtomic(r.filePath, data);
+    return {name: basename(r.filePath), path: r.filePath};
+  });
+
+  ipcMain.on('app:dirty', (_e, v: boolean) => {
+    dirty = v;
+  });
+  ipcMain.on('app:close-now', () => {
+    forceClose = true;
+    win?.close();
   });
 
   app.whenReady().then(() => {

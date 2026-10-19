@@ -329,3 +329,33 @@ button.primary:hover:not(:disabled) {
   justify-content: flex-end;
   gap: 8px;
 }
+
+#print-root {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 0;
+  }
+  html,
+  body {
+    height: auto;
+    background: #fff;
+  }
+  #root {
+    display: none;
+  }
+  #print-root {
+    display: block;
+  }
+  #print-root img {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    break-after: page;
+  }
+  #print-root img:last-child {
+    break-after: auto;
+  }
+}

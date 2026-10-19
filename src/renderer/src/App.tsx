@@ -5,6 +5,7 @@ import {PageView} from './PageView';
 import {Sidebar} from './Sidebar';
 import {OverLayer, UnderLayer} from './AnnotationLayer';
 import type {Handlers} from './AnnotationLayer';
+import {printPdf} from './print';
 import {COLORS, bakeAnnotations, newId} from './annotations';
 import type {Ann, Box, Tool} from './annotations';
 
@@ -333,6 +334,25 @@ export function App() {
     }
   };
 
+  const [printing, setPrinting] = useState(false);
+  const printingRef = useRef(false);
+  const print = useCallback(async () => {
+    const f = fileRef.current;
+    if (!f || printingRef.current) return;
+    printingRef.current = true;
+    setPrinting(true);
+    try {
+      const data = await bake(f);
+      await printPdf(data, (done, total) => setToast(`Preparing to print… ${done}/${total}`));
+      setToast(null);
+    } catch (e) {
+      setToast('Could not print: ' + String((e as Error)?.message ?? e));
+    } finally {
+      printingRef.current = false;
+      setPrinting(false);
+    }
+  }, []);
+
   const resolvePending = async (choice: 'save' | 'discard' | 'cancel') => {
     const run = pending;
     setPending(null);
@@ -357,6 +377,7 @@ export function App() {
       };
       const key = e.key.toLowerCase();
       if (key === 'o') act(openDialog);
+      else if (key === 'p') act(() => void print());
       else if (key === 'f') act(() => searchBox.current?.focus());
       else if (key === 's') act(() => void (e.shiftKey ? saveAs() : save()));
       else if (key === 'z' && !typing) act(undo);
@@ -445,6 +466,9 @@ export function App() {
           title='Save as a new file (Ctrl+Shift+S)'
         >
           Save as…
+        </button>
+        <button disabled={!doc || printing} onClick={() => void print()} title='Print (Ctrl+P)'>
+          Print
         </button>
         <span className='sep' />
         <button
